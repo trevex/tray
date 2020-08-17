@@ -40,9 +40,12 @@ static void tray_menu_set_cb(struct tray_menu *s) {
 import "C"
 import (
 	"fmt"
-	"github.com/mattn/go-pointer"
+	"io/ioutil"
+	"os"
 	"runtime"
 	"unsafe"
+
+	"github.com/mattn/go-pointer"
 )
 
 var Seperator = &Menu{Text: "-"}
@@ -107,8 +110,17 @@ func (t *Tray) syncC() {
 	}
 	t.allocs = append(t.allocs, a)
 	ct := C.tray_get()
-	ct.icon.data = (*C.char)(unsafe.Pointer(&t.Icon[0]))
-	ct.icon.length = (C.int)(len(t.Icon))
+	if runtime.GOOS != "linux" {
+		ct.icon.data = (*C.char)(unsafe.Pointer(&t.Icon[0]))
+		ct.icon.length = (C.int)(len(t.Icon))
+	} else {
+		// On linux instead we store the content of the icon the temp file,
+		// which is created in the .Run method and cleaned up via .Quit.
+		err := ioutil.WriteFile(C.GoString(ct.icon.data), t.Icon, 0644)
+		if err != nil {
+			panic(err)
+		}
+	}
 	for i, m := range t.Menu {
 		m.tray = t
 		trayMenuSet(a, i, m)
@@ -135,6 +147,17 @@ func (t *Tray) syncC() {
 
 func (t *Tray) Run() error {
 	runtime.LockOSThread()
+	if runtime.GOOS == "linux" {
+		// On linux we'll have to store the icon in a tempfile, so let's
+		// create the file. This file will be written to in .syncC and it will
+		// be cleaned up by .Quit.
+		ct := C.tray_get()
+		tmp, err := ioutil.TempFile("", "icon")
+		if err != nil {
+			panic(err)
+		}
+		ct.icon.data = C.CString(tmp.Name())
+	}
 	t.syncC()
 	if C.tray_init(C.tray_get()) < 0 {
 		return fmt.Errorf("tray init failed")
@@ -150,6 +173,11 @@ func (t *Tray) Update() {
 }
 
 func (t *Tray) Quit() {
+	if runtime.GOOS == "linux" {
+		// Let's cleanup or temporary file.
+		ct := C.tray_get()
+		os.Remove(C.GoString(ct.icon.data))
+	}
 	C.tray_exit()
 }
 

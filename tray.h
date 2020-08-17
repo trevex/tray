@@ -5,7 +5,7 @@ struct tray_menu;
 
 struct tray {
     struct {
-        char* data;
+        char* data; // Will be real data on darwin and windows, but path on linux
         int length;
     } icon;
     struct tray_menu *menu;
