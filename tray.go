@@ -1,8 +1,6 @@
 package tray
 
 /*
-#cgo darwin CFLAGS: -DTRAY_APPKIT=1 -DOBJC_OLD_DISPATCH_PROTOTYPES=1 -x objective-c
-#cgo darwin LDFLAGS: -framework Cocoa -framework AppKit
 #cgo darwin CFLAGS: -DDARWIN -x objective-c -fobjc-arc
 #cgo darwin LDFLAGS: -framework Cocoa
 #cgo linux pkg-config: gtk+-3.0 appindicator3-0.1
