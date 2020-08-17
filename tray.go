@@ -79,6 +79,9 @@ func (a *alloc) Free() {
 	for _, cs := range a.strings {
 		C.free(unsafe.Pointer(cs))
 	}
+	for _, ptr := range a.ptrs {
+		pointer.Unref(ptr)
+	}
 }
 
 type Menu struct {
