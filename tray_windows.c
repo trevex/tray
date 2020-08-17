@@ -1,6 +1,8 @@
 #include <windows.h>
 #include <shellapi.h>
 
+#include "tray.h"
+
 #define WM_TRAY_CALLBACK_MESSAGE (WM_USER + 1)
 #define WC_TRAY_CLASS_NAME "TRAY"
 #define ID_TRAY_FIRST 1000
@@ -81,7 +83,7 @@ static HMENU _tray_menu(struct tray_menu *m, UINT *id) {
   return hmenu;
 }
 
-static int tray_init(struct tray *tray) {
+int tray_init(struct tray *tray) {
   memset(&wc, 0, sizeof(wc));
   wc.cbSize = sizeof(WNDCLASSEX);
   wc.lpfnWndProc = _tray_wnd_proc;
@@ -109,7 +111,7 @@ static int tray_init(struct tray *tray) {
   return 0;
 }
 
-static int tray_loop(int blocking) {
+int tray_loop(int blocking) {
   MSG msg;
   if (blocking) {
     GetMessage(&msg, NULL, 0, 0);
@@ -124,13 +126,13 @@ static int tray_loop(int blocking) {
   return 0;
 }
 
-static void tray_update(struct tray *tray) {
+void tray_update(struct tray *tray) {
   HMENU prevmenu = hmenu;
   UINT id = ID_TRAY_FIRST;
   hmenu = _tray_menu(tray->menu, &id);
   SendMessage(hwnd, WM_INITMENUPOPUP, (WPARAM)hmenu, 0);
   HICON icon;
-  ExtractIconEx(tray->icon, 0, NULL, &icon, 1);
+  ExtractIconEx(tray->icon.data, 0, NULL, &icon, 1);
   if (nid.hIcon) {
     DestroyIcon(nid.hIcon);
   }
@@ -142,7 +144,7 @@ static void tray_update(struct tray *tray) {
   }
 }
 
-static void tray_exit() {
+void tray_exit() {
   Shell_NotifyIcon(NIM_DELETE, &nid);
   if (nid.hIcon != 0) {
     DestroyIcon(nid.hIcon);

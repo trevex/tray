@@ -110,10 +110,11 @@ func (t *Tray) syncC() {
 	}
 	t.allocs = append(t.allocs, a)
 	ct := C.tray_get()
-	if runtime.GOOS != "linux" {
+	if runtime.GOOS == "darwin" {
 		ct.icon.data = (*C.char)(unsafe.Pointer(&t.Icon[0]))
 		ct.icon.length = (C.int)(len(t.Icon))
 	} else {
+		fmt.Println(C.GoString(ct.icon.data))
 		// On linux instead we store the content of the icon the temp file,
 		// which is created in the .Run method and cleaned up via .Quit.
 		err := ioutil.WriteFile(C.GoString(ct.icon.data), t.Icon, 0644)
@@ -147,7 +148,7 @@ func (t *Tray) syncC() {
 
 func (t *Tray) Run() error {
 	runtime.LockOSThread()
-	if runtime.GOOS == "linux" {
+	if runtime.GOOS != "darwin" {
 		// On linux we'll have to store the icon in a tempfile, so let's
 		// create the file. This file will be written to in .syncC and it will
 		// be cleaned up by .Quit.
@@ -156,7 +157,8 @@ func (t *Tray) Run() error {
 		if err != nil {
 			panic(err)
 		}
-		ct.icon.data = C.CString(tmp.Name())
+		// So append it on linux as well as it has no impact
+		ct.icon.data = C.CString(tmp.Name()+".ico")
 	}
 	t.syncC()
 	if C.tray_init(C.tray_get()) < 0 {
@@ -173,7 +175,7 @@ func (t *Tray) Update() {
 }
 
 func (t *Tray) Quit() {
-	if runtime.GOOS == "linux" {
+	if runtime.GOOS != "darwin" {
 		// Let's cleanup or temporary file.
 		ct := C.tray_get()
 		os.Remove(C.GoString(ct.icon.data))
