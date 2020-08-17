@@ -98,6 +98,24 @@ func (t *Tray) syncC() {
 		cm.context = pointer.Save(m)
 		C.tray_menu_set_cb(cm)
 	}
+	offset := len(t.Menu) + 1
+	for i, m := range t.Menu {
+		if m.SubMenu == nil || len(m.SubMenu) == 0 {
+			continue
+		}
+		cm := C.tray_menu_get(C.size_t(i))
+		cm.submenu = C.tray_menu_get(C.size_t(offset))
+		for _, s := range m.SubMenu {
+			cs := C.tray_menu_get(C.size_t(offset))
+			cs.text = a.String(s.Text)
+			cs.checked = boolToInt(s.Checked)
+			cs.disabled = boolToInt(s.Disabled)
+			cs.context = pointer.Save(s)
+			C.tray_menu_set_cb(cs)
+			offset += 1
+		}
+		offset += 1
+	}
 	if len(t.allocs) > 2 {
 		a, t.allocs = t.allocs[0], t.allocs[1:]
 		a.Free()
@@ -110,7 +128,7 @@ type TrayMenu struct {
 	Checked  bool
 	Disabled bool
 	Callback func(*TrayMenu)
-	// SubMenu  []*TrayMenu
+	SubMenu  []*TrayMenu
 }
 
 func (t *Tray) Run() error {
