@@ -60,19 +60,15 @@ func main() {
 			{
 				Text: "Add",
 				Callback: func(m *TrayMenu) {
-					a := m.Tray.Menu
-					i := len(a) - 2
-					m.Tray.Menu = append(a[:i], append([]*TrayMenu{{Text: fmt.Sprintf("Foo%d", i)}}, a[i:]...)...)
+					m.Tray.Menu = Insert(m.Tray.Menu, len(m.Tray.Menu)-2, &TrayMenu{Text: "Bizzbuzz"})
 					m.Tray.Update()
 				},
 			},
 			{
 				Text: "Remove",
 				Callback: func(m *TrayMenu) {
-					a := m.Tray.Menu
-					if len(a) > 9 {
-						i := len(a) - 2
-						m.Tray.Menu = append(a[:i-1], a[i:]...)
+					if len(m.Tray.Menu) > 9 {
+						m.Tray.Menu = Remove(m.Tray.Menu, len(m.Tray.Menu)-2)
 						m.Tray.Update()
 					}
 				},

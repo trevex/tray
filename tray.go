@@ -74,6 +74,15 @@ func (a *alloc) Free() {
 	}
 }
 
+type TrayMenu struct {
+	Tray     *Tray
+	Text     string
+	Checked  bool
+	Disabled bool
+	Callback func(*TrayMenu)
+	SubMenu  []*TrayMenu
+}
+
 type Tray struct {
 	Icon   []byte
 	Menu   []*TrayMenu
@@ -122,15 +131,6 @@ func (t *Tray) syncC() {
 	}
 }
 
-type TrayMenu struct {
-	Tray     *Tray
-	Text     string
-	Checked  bool
-	Disabled bool
-	Callback func(*TrayMenu)
-	SubMenu  []*TrayMenu
-}
-
 func (t *Tray) Run() error {
 	runtime.LockOSThread()
 	t.syncC()
@@ -149,6 +149,14 @@ func (t *Tray) Update() {
 
 func (t *Tray) Quit() {
 	C.tray_exit()
+}
+
+func Insert(a []*TrayMenu, i int, m *TrayMenu) []*TrayMenu {
+	return append(a[:i], append([]*TrayMenu{m}, a[i:]...)...)
+}
+
+func Remove(a []*TrayMenu, i int) []*TrayMenu {
+	return append(a[:i-1], a[i:]...)
 }
 
 func boolToInt(b bool) C.int {
