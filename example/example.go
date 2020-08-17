@@ -3,29 +3,27 @@ package main
 import (
 	"fmt"
 
-	. "github.com/trevex/tray"
+	"github.com/trevex/tray"
 	"github.com/trevex/tray/example/icon"
 )
 
 func main() {
-	t := Tray{
+	t := tray.Tray{
 		Icon: icon.Data,
-		Menu: []*TrayMenu{
+		Menu: []*tray.Menu{
 			{
 				Text: "Hello",
-				Callback: func(m *TrayMenu) {
+				Callback: func(t *tray.Tray, m *tray.Menu) {
 					fmt.Println("Hello, tray!")
 				},
 			},
-			{
-				Text: "-",
-			},
+			tray.Seperator,
 			{
 				Text:    "Checked",
 				Checked: true,
-				Callback: func(m *TrayMenu) {
+				Callback: func(t *tray.Tray, m *tray.Menu) {
 					m.Checked = !m.Checked
-					m.Tray.Update()
+					t.Update()
 				},
 			},
 			{
@@ -34,7 +32,7 @@ func main() {
 			},
 			{
 				Text: "Sub1",
-				SubMenu: []*TrayMenu{
+				SubMenu: []*tray.Menu{
 					{
 						Text: "Baz1",
 					},
@@ -45,7 +43,7 @@ func main() {
 			},
 			{
 				Text: "Sub2",
-				SubMenu: []*TrayMenu{
+				SubMenu: []*tray.Menu{
 					{
 						Text: "Baz2",
 					},
@@ -54,32 +52,28 @@ func main() {
 					},
 				},
 			},
-			{
-				Text: "-",
-			},
+			tray.Seperator,
 			{
 				Text: "Add",
-				Callback: func(m *TrayMenu) {
-					m.Tray.Menu = Insert(m.Tray.Menu, len(m.Tray.Menu)-2, &TrayMenu{Text: "Bizzbuzz"})
-					m.Tray.Update()
+				Callback: func(t *tray.Tray, m *tray.Menu) {
+					t.Menu = tray.Insert(t.Menu, len(t.Menu)-2, &tray.Menu{Text: "Bizzbuzz"})
+					t.Update()
 				},
 			},
 			{
 				Text: "Remove",
-				Callback: func(m *TrayMenu) {
-					if len(m.Tray.Menu) > 9 {
-						m.Tray.Menu = Remove(m.Tray.Menu, len(m.Tray.Menu)-2)
-						m.Tray.Update()
+				Callback: func(t *tray.Tray, m *tray.Menu) {
+					if len(t.Menu) > 9 {
+						t.Menu = tray.Remove(t.Menu, len(t.Menu)-2)
+						t.Update()
 					}
 				},
 			},
-			{
-				Text: "-",
-			},
+			tray.Seperator,
 			{
 				Text: "Quit",
-				Callback: func(m *TrayMenu) {
-					m.Tray.Quit()
+				Callback: func(t *tray.Tray, m *tray.Menu) {
+					t.Quit()
 				},
 			},
 		},

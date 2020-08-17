@@ -47,19 +47,22 @@ import (
 	"unsafe"
 )
 
+var Seperator = &Menu{Text: "-"}
+
 //export tray_menu_cb
 func tray_menu_cb(cm *C.struct_tray_menu) {
 	if cm == nil || cm.context == nil {
 		return
 	}
-	m := pointer.Restore(cm.context).(*TrayMenu)
+	m := pointer.Restore(cm.context).(*Menu)
 	if m != nil && m.Callback != nil {
-		m.Callback(m)
+		m.Callback(m.tray, m)
 	}
 }
 
 type alloc struct {
 	strings []*C.char
+	ptrs    []unsafe.Pointer
 }
 
 func (a *alloc) String(str string) *C.char {
@@ -68,24 +71,30 @@ func (a *alloc) String(str string) *C.char {
 	return cs
 }
 
+func (a *alloc) Pointer(o interface{}) unsafe.Pointer {
+	ptr := pointer.Save(o)
+	a.ptrs = append(a.ptrs, ptr)
+	return ptr
+}
+
 func (a *alloc) Free() {
 	for _, cs := range a.strings {
 		C.free(unsafe.Pointer(cs))
 	}
 }
 
-type TrayMenu struct {
-	Tray     *Tray
+type Menu struct {
+	tray     *Tray
 	Text     string
 	Checked  bool
 	Disabled bool
-	Callback func(*TrayMenu)
-	SubMenu  []*TrayMenu
+	Callback func(*Tray, *Menu)
+	SubMenu  []*Menu
 }
 
 type Tray struct {
 	Icon   []byte
-	Menu   []*TrayMenu
+	Menu   []*Menu
 	allocs []*alloc
 }
 
@@ -93,19 +102,15 @@ func (t *Tray) syncC() {
 	C.tray_menu_reset()
 	a := &alloc{
 		strings: []*C.char{},
+		ptrs:    []unsafe.Pointer{},
 	}
 	t.allocs = append(t.allocs, a)
 	ct := C.tray_get()
 	ct.icon.data = (*C.char)(unsafe.Pointer(&t.Icon[0]))
 	ct.icon.length = (C.int)(len(t.Icon))
 	for i, m := range t.Menu {
-		m.Tray = t
-		cm := C.tray_menu_get(C.size_t(i))
-		cm.text = a.String(m.Text)
-		cm.checked = boolToInt(m.Checked)
-		cm.disabled = boolToInt(m.Disabled)
-		cm.context = pointer.Save(m)
-		C.tray_menu_set_cb(cm)
+		m.tray = t
+		trayMenuSet(a, i, m)
 	}
 	offset := len(t.Menu) + 1
 	for i, m := range t.Menu {
@@ -115,12 +120,8 @@ func (t *Tray) syncC() {
 		cm := C.tray_menu_get(C.size_t(i))
 		cm.submenu = C.tray_menu_get(C.size_t(offset))
 		for _, s := range m.SubMenu {
-			cs := C.tray_menu_get(C.size_t(offset))
-			cs.text = a.String(s.Text)
-			cs.checked = boolToInt(s.Checked)
-			cs.disabled = boolToInt(s.Disabled)
-			cs.context = pointer.Save(s)
-			C.tray_menu_set_cb(cs)
+			s.tray = t
+			trayMenuSet(a, offset, s)
 			offset += 1
 		}
 		offset += 1
@@ -151,12 +152,21 @@ func (t *Tray) Quit() {
 	C.tray_exit()
 }
 
-func Insert(a []*TrayMenu, i int, m *TrayMenu) []*TrayMenu {
-	return append(a[:i], append([]*TrayMenu{m}, a[i:]...)...)
+func Insert(a []*Menu, i int, m *Menu) []*Menu {
+	return append(a[:i], append([]*Menu{m}, a[i:]...)...)
 }
 
-func Remove(a []*TrayMenu, i int) []*TrayMenu {
+func Remove(a []*Menu, i int) []*Menu {
 	return append(a[:i-1], a[i:]...)
+}
+
+func trayMenuSet(a *alloc, i int, m *Menu) {
+	cm := C.tray_menu_get(C.size_t(i))
+	cm.text = a.String(m.Text)
+	cm.checked = boolToInt(m.Checked)
+	cm.disabled = boolToInt(m.Disabled)
+	cm.context = a.Pointer(m)
+	C.tray_menu_set_cb(cm)
 }
 
 func boolToInt(b bool) C.int {
