@@ -23,7 +23,7 @@ static struct tray_menu* tray_menu_get(size_t i) {
 }
 
 static void tray_menu_reset() {
-	for (int i = 0; i < 64; ++i) {
+	for (int i = 0; i < 128; ++i) {
 		menu[i].text = NULL;
 		menu[i].cb = NULL;
 		menu[i].context = NULL;
@@ -158,7 +158,7 @@ func (t *Tray) Run() error {
 			panic(err)
 		}
 		// So append it on linux as well as it has no impact
-		ct.icon.data = C.CString(tmp.Name()+".ico")
+		ct.icon.data = C.CString(tmp.Name() + ".ico")
 	}
 	t.syncC()
 	if C.tray_init(C.tray_get()) < 0 {

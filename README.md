@@ -15,8 +15,11 @@ See [example](./example/example.go) for usage instructions.
 
 ## Known issues
 
-* No sub menu icons supported
+* No sub menu icons are supported
 * Will use a temporary file for the tray icon on Linux and Windows
+* To avoid memory leaks and issues with the several system libraries a pre-allocated array is used for the menu entries. This introduces a limit of up to 128 menu entries
+* Both the use of static allocation and the requirement to run on the main thread limit each executable to a single system tray menu
+* To also provide a GUI consider forking a process, because GUI libraries will require to run in the main thread as well, e.g. [andlabs/ui](github.com/andlabs/ui)
 
 ## Acknowledgements
 
